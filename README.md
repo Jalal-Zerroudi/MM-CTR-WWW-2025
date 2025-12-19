@@ -1,105 +1,87 @@
-# MM-CTR: AUC Boost for Multimodal Click-Through Rate Prediction
+# MM-CTR – AUC Boost for Multimodal CTR Prediction (WWW 2025)
 
-This repository contains a fully executed Kaggle notebook:
-**`mmctr-auc-boost-full-notebook.ipynb`**, developed for the  
+This repository contains a fully executed Kaggle notebook developed for the  
 **Multimodal Click-Through Rate Prediction (MM-CTR) Challenge – WWW 2025 (EReL@MIR Workshop)**.
 
-The notebook focuses on **Task 2: Multimodal CTR Prediction**, with the objective of **boosting AUC performance** by effectively leveraging **precomputed multimodal item embeddings**.
+📘 Notebook:
+- `mmctr-auc-boost-full-notebook.ipynb`
+
+The goal of this work is to **maximize AUC** for **Task 2: Multimodal CTR Prediction** by leveraging **precomputed multimodal item embeddings**.
 
 ---
 
-## 🧠 Project Overview
+## 🧠 Problem Description
 
-Click-Through Rate (CTR) prediction is a core problem in recommender systems.  
-In the MM-CTR challenge, each item is represented by **multimodal embeddings** (image, text, etc.), and the task is to predict whether a user will click on an item.
+Click-Through Rate (CTR) prediction is a fundamental task in recommender systems.  
+Given an item and its multimodal representation (image, text, etc.), the objective is to predict the probability that a user will click on that item.
 
-This notebook implements a **feature-based CTR pipeline** that:
-- Loads multimodal embeddings
-- Combines them into a structured feature space
-- Trains a high-performance machine learning model
-- Optimizes the **AUC (Area Under the ROC Curve)** metric
-- Generates a submission-ready `prediction.csv` file
+In the MM-CTR challenge:
+- Multimodal representations are provided as **item embeddings**
+- The task focuses on **efficient and accurate CTR prediction**
+- Evaluation is based on **AUC (Area Under the ROC Curve)**
 
 ---
 
 ## 🎯 Objective
 
-- Improve CTR prediction performance
-- Maximize **AUC score**
-- Maintain **low-latency inference compatibility**
-- Produce a valid submission file for the MM-CTR leaderboard
+- Build a strong CTR prediction pipeline
+- Exploit multimodal embeddings as structured features
+- Optimize ranking quality via **AUC maximization**
+- Generate a valid `prediction.csv` submission file
 
 ---
 
-## 🗂 Notebook Structure
+## 🗂 Project Structure
 
-The notebook is organized into **logical, sequential steps**:
+```
+.
+├── mmctr-auc-boost-full-notebook.ipynb
+├── prediction.csv
+└── README.md
+```
+
+---
+
+## ⚙️ Execution Environment
+
+- Platform: **Kaggle Notebook**
+- Python: **3.x**
+- Hardware: **CPU / GPU (CUDA if available)**
+
+All cells have been successfully executed on Kaggle.
+
+---
+
+## 🧩 Methodology & Code Logic
 
 ### 1️⃣ Environment Setup
-- Import of required libraries (`numpy`, `pandas`, `sklearn`, etc.)
-- Kaggle-compatible execution (no local path dependencies)
-- Reproducibility via random seeds
-
----
+- Installation of required libraries
+- Reproducibility via fixed random seed
+- Automatic GPU detection
 
 ### 2️⃣ Data Loading
-- Loading of:
-  - Training data (labels)
-  - Test data
-  - Precomputed multimodal embeddings
-- Efficient handling of large embedding matrices
-- Alignment between item IDs and embedding vectors
+- Training and test data loaded from Parquet files
+- Multimodal embeddings loaded from NumPy files
 
-**Key idea:**  
-Multimodal embeddings are treated as **numerical features**, enabling classical ML models to exploit semantic information.
+### 3️⃣ Feature Construction
+- Each item represented by its embedding vector
+- Embeddings used directly as numerical features
 
----
+### 4️⃣ Model
+- Lightweight neural CTR model (MLP)
+- Optimized for fast inference and strong AUC
 
-### 3️⃣ Feature Engineering
-- Embedding normalization / reshaping
-- Feature concatenation
-- Optional dimensionality handling
-- Construction of final feature matrix `X`
+### 5️⃣ Training & Evaluation
+- Binary Cross-Entropy loss
+- Adam optimizer
+- Validation based on AUC
 
-This step bridges **multimodal representation learning (Task 1)** and **CTR prediction (Task 2)**.
-
----
-
-### 4️⃣ Model Selection
-- Use of a **tree-based or linear model optimized for AUC**
-- Justification:
-  - Handles high-dimensional features
-  - Robust to noise
-  - Fast inference
-  - Strong baseline for CTR tasks
+### 6️⃣ Prediction & Submission
+- CTR probabilities generated for test set
+- Output saved as `prediction.csv`
 
 ---
 
-### 5️⃣ Training Strategy
-- Train/validation split
-- AUC as the primary evaluation metric
-- Model fitting on multimodal features
-- Monitoring of validation performance
+## 📊 Evaluation Metric
 
----
-
-### 6️⃣ AUC Boosting Logic
-- Fine-tuning of model hyperparameters
-- Focus on:
-  - Reducing overfitting
-  - Improving ranking quality
-- Emphasis on **relative ordering of predictions**, not raw probabilities
-
----
-
-### 7️⃣ Prediction
-- Inference on the test set
-- Generation of CTR probability scores
-- Output formatting compliant with challenge rules
-
----
-
-### 8️⃣ Submission File Generation
-- Creation of:
-  ```text
-  prediction.csv
+**AUC (Area Under the ROC Curve)**

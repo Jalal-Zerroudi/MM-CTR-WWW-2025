@@ -1,87 +1,199 @@
-# MM-CTR – AUC Boost for Multimodal CTR Prediction (WWW 2025)
+# MM-CTR (WWW 2025) — MicroLens_1M_x1  
+## Multimodal Item Embedding Pipeline (Sequences + Images)
 
-This repository contains a fully executed Kaggle notebook developed for the  
-**Multimodal Click-Through Rate Prediction (MM-CTR) Challenge – WWW 2025 (EReL@MIR Workshop)**.
+Ce projet implémente un **pipeline complet de génération d’embeddings items 128D** pour le challenge **Multimodal Click-Through Rate Prediction (MM-CTR – WWW 2025)**, basé sur le dataset **MicroLens_1M_x1**.
 
-📘 Notebook:
-- `mmctr-auc-boost-full-notebook.ipynb`
-
-The goal of this work is to **maximize AUC** for **Task 2: Multimodal CTR Prediction** by leveraging **precomputed multimodal item embeddings**.
-
----
-
-## 🧠 Problem Description
-
-Click-Through Rate (CTR) prediction is a fundamental task in recommender systems.  
-Given an item and its multimodal representation (image, text, etc.), the objective is to predict the probability that a user will click on that item.
-
-In the MM-CTR challenge:
-- Multimodal representations are provided as **item embeddings**
-- The task focuses on **efficient and accurate CTR prediction**
-- Evaluation is based on **AUC (Area Under the ROC Curve)**
+Le pipeline combine :
+- **Séquences utilisateurs** (Word2Vec) → *Teacher*
+- **Images produits** (CLIP) → *Student*
+- **Distillation multimodale** via un Projector MLP
+- **Fusion adaptive (Gating)** Teacher / Student
+- **Intégration avec le repo officiel MM-CTR**
+- **Génération de `prediction.csv` (Task2 baseline)**
 
 ---
 
-## 🎯 Objective
+## 1. Environnement
 
-- Build a strong CTR prediction pipeline
-- Exploit multimodal embeddings as structured features
-- Optimize ranking quality via **AUC maximization**
-- Generate a valid `prediction.csv` submission file
+### Plateforme
+- **Kaggle Notebook**
+- GPU recommandé (T4 / P100 / A100)
 
----
-
-## 🗂 Project Structure
-
-```
-.
-├── mmctr-auc-boost-full-notebook.ipynb
-├── prediction.csv
-└── README.md
+### Installation des dépendances
+```bash
+pip -q install -U "transformers>=4.41" datasets polars pyarrow gensim tqdm scikit-learn accelerate
 ```
 
----
-
-## ⚙️ Execution Environment
-
-- Platform: **Kaggle Notebook**
-- Python: **3.x**
-- Hardware: **CPU / GPU (CUDA if available)**
-
-All cells have been successfully executed on Kaggle.
+### Librairies principales
+- `polars` : lecture/écriture parquet (streaming, RAM-safe)
+- `gensim` : Word2Vec
+- `transformers` : CLIP
+- `torch` : entraînement + AMP
+- `numpy.memmap` : stockage disque des features images
 
 ---
 
-## 🧩 Methodology & Code Logic
+## 2. Données
 
-### 1️⃣ Environment Setup
-- Installation of required libraries
-- Reproducibility via fixed random seed
-- Automatic GPU detection
+### Structure attendue
+```text
+www2025-mmctr-data/
+└── MicroLens_1M_MMCTR/
+    ├── MicroLens_1M_x1/
+    │   ├── train.parquet
+    │   ├── valid.parquet
+    │   ├── test.parquet
+    │   └── item_info.parquet
+    ├── item_seq.parquet
+    └── item_images/
+        └── item_images/
+            ├── 1.jpg
+            ├── 2.jpg
+            └── ...
+```
 
-### 2️⃣ Data Loading
-- Training and test data loaded from Parquet files
-- Multimodal embeddings loaded from NumPy files
-
-### 3️⃣ Feature Construction
-- Each item represented by its embedding vector
-- Embeddings used directly as numerical features
-
-### 4️⃣ Model
-- Lightweight neural CTR model (MLP)
-- Optimized for fast inference and strong AUC
-
-### 5️⃣ Training & Evaluation
-- Binary Cross-Entropy loss
-- Adam optimizer
-- Validation based on AUC
-
-### 6️⃣ Prediction & Submission
-- CTR probabilities generated for test set
-- Output saved as `prediction.csv`
+### Chemins configurés automatiquement
+```python
+cfg.ITEM_INFO = ".../MicroLens_1M_x1/item_info.parquet"
+cfg.TRAIN     = ".../MicroLens_1M_x1/train.parquet"
+cfg.VALID     = ".../MicroLens_1M_x1/valid.parquet"
+cfg.TEST      = ".../MicroLens_1M_x1/test.parquet"
+cfg.ITEM_SEQ  = ".../item_seq.parquet"
+cfg.IMG_DIR   = ".../item_images/item_images"
+```
 
 ---
 
-## 📊 Evaluation Metric
+## 3. Pipeline global
 
-**AUC (Area Under the ROC Curve)**
+```
+User Sequences ──► Word2Vec (SG + CBOW) ──► PCA ──► Teacher 128D
+                                           │
+Item Images ──► CLIP ViT-B/32 ──► Projector ─┤
+                                           ▼
+                               Cosine-based Gating
+                                           ▼
+                                Final Item Embedding 128D
+```
+
+---
+
+## 4. Étapes détaillées
+
+### 4.1 Teacher — Word2Vec sur séquences
+- Chargement RAM-safe de `item_seq.parquet`
+- Filtrage utilisateurs (`user_id % KEEP_MOD`)
+- Word2Vec :
+  - Skip-Gram + CBOW
+  - Dimension 256 → PCA → 128
+- Imputation des items manquants via `item_tags`
+- Normalisation L2
+
+**Sortie**
+- `item_info.parquet` avec `item_emb_d128`
+
+---
+
+### 4.2 Student — CLIP (Images)
+- Modèle : `openai/clip-vit-base-patch32`
+- Extraction image → vecteur 512D
+- Stockage disque via `numpy.memmap` (float16)
+
+**Sortie**
+- `clip_img_feats.f16.mmap`
+
+---
+
+### 4.3 Distillation — Projector MLP
+- Architecture : `512 → 256 → 128`
+- Loss :
+  - Cosine loss
+  - InfoNCE symétrique (in-batch)
+- Entraînement en AMP (fp16)
+
+---
+
+### 4.4 Fusion multimodale (Gating)
+Formule :
+```math
+g = clamp((cos(t, s) + 1) / 2)
+v = normalize(g · t + (1 - g) · s)
+```
+
+- `t` : teacher normalisé
+- `s` : student normalisé
+
+**Sortie**
+- Embedding final 128D par item
+
+---
+
+### 4.5 Export final
+- Mise à jour de `item_info.parquet`
+- Duplication pour compatibilité :
+  - `item_emb_d128` → `item_emb`
+
+**Fichiers générés**
+```text
+/kaggle/working/
+├── item_info.parquet
+├── item_info_updated.parquet
+├── clip_img_feats.f16.mmap
+```
+
+---
+
+## 5. Intégration repo officiel MM-CTR (optionnel)
+
+Le notebook :
+1. Clone `WWW2025_MMCTR_Challenge`
+2. Copie les données dans `repo/data/MicroLens_1M_x1`
+3. Génère des configs YAML personnalisées (DIN / DCNv2)
+4. Patch compatibilité NumPy 2.0 (`np.Inf → np.inf`)
+5. Lance le tuner :
+```bash
+python run_param_tuner.py --config <CONFIG.yaml> --gpu 0
+```
+
+---
+
+## 6. Baseline Task2 — prediction.csv
+
+Baseline simple par popularité :
+```math
+CTR(item) = (clicks + 1) / (impressions + 2)
+```
+
+Fallback :
+```math
+CTR_global
+```
+
+**Fichier généré**
+```text
+prediction-task2.csv
+```
+
+Format :
+```csv
+ID,Task2
+```
+
+---
+
+## 7. Bonnes pratiques & performance
+
+- Réduire `KEEP_MOD` → plus de données (meilleur AUC)
+- Augmenter `W2V_EPOCHS` (10–15 recommandé)
+- Réduire batch CLIP si OOM GPU
+- `memmap` indispensable pour stabilité RAM
+
+---
+
+## 8. Checklist finale
+
+✅ `item_id = 0` = padding (vecteur nul)  
+✅ Embeddings 128D normalisés  
+✅ Aucun NaN  
+✅ CSV conforme (`ID`, `Task2`)  
+✅ Compatible repo officiel MM-CTR  

@@ -156,7 +156,7 @@ v = normalize(g · t + (1 - g) · s)
 
 ---
 
-## 5. Intégration repo officiel MM-CTR (optionnel)
+## 5. Intégration repo officiel MM-CTR
 
 Le notebook :
 1. Clone `WWW2025_MMCTR_Challenge`

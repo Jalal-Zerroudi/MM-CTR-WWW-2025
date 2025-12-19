@@ -77,6 +77,19 @@ Item Images ──► CLIP ViT-B/32 ──► Projector ─┤
 ```
 
 ---
+## 3.b Architecture (schéma)
+
+<p align="center">
+  <img src="architecture.png" alt="Architecture du pipeline MM-CTR" width="950">
+</p>
+
+**Lecture rapide :**
+- **Branche comportementale (Teacher)** : Word2Vec (SG+CBOW) → PCA → Imputation tags → Normalisation L2 → *Teacher 128d*
+- **Branche visuelle (Student)** : CLIP (ViT-B/32) → features 512d (memmap) → MLP Projector → *Student 128d*
+- **Alignement** : loss **Cosine + InfoNCE**
+- **Fusion** : gating basé sur `cos(Teacher, Student)` → *Final 128d*
+
+
 
 ## 4. Étapes détaillées
 

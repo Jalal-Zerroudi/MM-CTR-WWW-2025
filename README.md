@@ -9,7 +9,7 @@ Le pipeline combine :
 - **Distillation multimodale** via un Projector MLP
 - **Fusion adaptive (Gating)** Teacher / Student
 - **Intégration avec le repo officiel MM-CTR**
-- **Génération de `prediction.csv` (Task2 baseline)**
+- **Génération de `prediction-task2.csv` (Task2 baseline)**
 
 ---
 

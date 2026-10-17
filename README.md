@@ -19,6 +19,19 @@ Le pipeline combine :
 - **Kaggle Notebook**
 - GPU recommandé (T4 / P100 / A100)
 
+### Exécution rapide sur Kaggle
+
+1. Importez `mmctr-auc-boost-full-notebook.ipynb` dans un notebook Kaggle.
+2. Activez un accélérateur GPU dans les paramètres du notebook.
+3. Ajoutez le dataset MM-CTR de façon qu'il soit monté dans
+   `/kaggle/input/www2025-mmctr-data/MicroLens_1M_MMCTR`.
+4. Exécutez les cellules dans l'ordre, du setup jusqu'à la génération de la soumission.
+5. Récupérez les artefacts dans `/kaggle/working/`, notamment
+   `item_info_updated.parquet` et `prediction-task2.csv`.
+
+> Le notebook vérifie les chemins d'entrée et interrompt l'exécution si les données ou
+> l'entraînement du modèle ne sont pas disponibles ; ne poursuivez pas avec des sorties partielles.
+
 ### Installation des dépendances
 ```bash
 pip -q install -U "transformers>=4.41" datasets polars pyarrow gensim tqdm scikit-learn accelerate

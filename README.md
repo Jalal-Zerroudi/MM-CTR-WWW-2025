@@ -207,9 +207,21 @@ ID,Task2
 
 ---
 
+### Portée de la baseline et vérifications
+
+La dernière cellule qui écrit `prediction-task2.csv` est **indépendante des embeddings multimodaux et des poids DIN/DCNv2** : elle utilise uniquement `item_id` et `label` du train pour calculer les CTR, puis les associe aux lignes du test. Ce CSV ne mesure donc pas, à lui seul, l'apport de CLIP, de la distillation ou du gating.
+
+- Les items absents du train reçoivent le CTR global lissé : `(somme_labels_train + 1) / (nombre_lignes_train + 2)`.
+- Les lignes du test correspondant à un même item reçoivent le même score de popularité, indépendamment de leur historique utilisateur.
+- La cellule de baseline ne calcule pas d'AUC sur `valid.parquet`. Pour comparer deux variantes, évaluez-les sur le même jeu de validation, sans utiliser ses labels pour construire les statistiques d'entraînement.
+- Avant soumission, vérifiez que le CSV comporte exactement les colonnes `ID,Task2`, une ligne par ligne du test, les mêmes identifiants dans le même ordre, et des scores numériques finis compris entre 0 et 1.
+- Conservez séparément les résultats de cette baseline et ceux des modèles entraînés ; l'exécution du tuner ne remplace pas automatiquement la formule de popularité dans cette cellule.
+
+---
+
 ## 7. Bonnes pratiques & performance
 
-- Réduire `KEEP_MOD` → plus de données (meilleur AUC)
+- Réduire `KEEP_MOD` conserve davantage de données avant le plafond `MAX_USERS_W2V` ; cela augmente le coût mémoire/temps, sans garantir une meilleure AUC.
 - Augmenter `W2V_EPOCHS` (10–15 recommandé)
 - Réduire batch CLIP si OOM GPU
 - `memmap` indispensable pour stabilité RAM

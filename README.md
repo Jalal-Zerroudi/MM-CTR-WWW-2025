@@ -226,6 +226,24 @@ La dernière cellule qui écrit `prediction-task2.csv` est **indépendante des e
 - Réduire batch CLIP si OOM GPU
 - `memmap` indispensable pour stabilité RAM
 
+
+### Reproductibilité des expériences
+
+Le notebook utilise `SEED = 42` pour Python, NumPy, PyTorch et Word2Vec, mais cela ne garantit
+pas des résultats identiques bit à bit. Word2Vec s'exécute avec quatre workers, et le pipeline GPU
+active TF32, AMP et `torch.backends.cudnn.benchmark = True`. De plus, l'installation met à jour
+des dépendances non figées et le dépôt officiel est cloné sans révision précise.
+
+Pour rendre deux essais comparables :
+
+- conservez la version du dataset Kaggle, le type de GPU et une version enregistrée du notebook ;
+- notez les valeurs effectives de `KEEP_MOD`, `MAX_USERS_W2V`, `W2V_EPOCHS`, `PROJ_EPOCHS` et `SEED` ;
+- exportez les versions Python avec `python -m pip freeze > /kaggle/working/requirements-lock.txt` ;
+- enregistrez le commit du dépôt officiel avec `git -C /kaggle/working/WWW2025_MMCTR_Challenge_repo rev-parse HEAD` ;
+- comparez les variantes sur exactement les mêmes lignes de validation et, si l'écart est faible,
+  répétez l'expérience avec plusieurs graines avant de conclure à une amélioration.
+
+
 ---
 
 ## 8. Checklist finale

@@ -205,6 +205,8 @@ Format :
 ID,Task2
 ```
 
+Le notebook contient une seule cellule d’export de soumission. Utilisez uniquement `prediction-task2.csv` : l’ancien format générique `prediction.csv` avec une colonne `prediction` n’est pas conforme au contrat Task2.
+
 ---
 
 ### Portée de la baseline et vérifications

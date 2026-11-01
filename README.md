@@ -34,7 +34,7 @@ Le pipeline combine :
 
 ### Installation des dépendances
 ```bash
-pip -q install -U "transformers>=4.41" datasets polars pyarrow gensim tqdm scikit-learn accelerate
+pip -q install -U "transformers>=4.41" datasets polars pyarrow gensim tqdm scikit-learn accelerate numba
 ```
 
 ### Librairies principales
@@ -42,6 +42,7 @@ pip -q install -U "transformers>=4.41" datasets polars pyarrow gensim tqdm sciki
 - `gensim` : Word2Vec
 - `transformers` : CLIP
 - `torch` : entraînement + AMP
+- `numba` : accélération JIT du filtrage et de la compaction des séquences
 - `numpy.memmap` : stockage disque des features images
 
 ---

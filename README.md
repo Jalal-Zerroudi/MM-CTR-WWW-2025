@@ -230,6 +230,19 @@ La dernière cellule qui écrit `prediction-task2.csv` est **indépendante des e
 - `memmap` indispensable pour stabilité RAM
 
 
+### Images manquantes ou illisibles
+
+La fonction `_safe_open_rgb` du notebook remplace actuellement toute image absente ou
+illisible par une image noire de 224 × 224 pixels. L'exécution continue, mais le vecteur CLIP
+ainsi produit participe ensuite à la distillation et au gating comme s'il provenait d'une image
+réelle. Plusieurs items sans image peuvent donc recevoir le même signal visuel artificiel.
+
+Avant de comparer des variantes, comptez séparément les fichiers absents et les erreurs de
+décodage, puis conservez ce décompte avec les métriques de l'expérience. Pour une évaluation
+rigoureuse, utilisez uniquement l'embedding comportemental du teacher lorsqu'une image n'est
+pas valide, ou ajoutez un masque de disponibilité à la fusion ; ne présentez pas le fallback
+noir comme une modalité visuelle observée.
+
 ### Reproductibilité des expériences
 
 Le notebook utilise `SEED = 42` pour Python, NumPy, PyTorch et Word2Vec, mais cela ne garantit
